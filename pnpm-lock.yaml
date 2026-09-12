@@ -56,6 +56,9 @@ importers:
       '@eslint/eslintrc':
         specifier: ^3.2.0
         version: 3.3.7
+      '@prisma/nextjs-monorepo-workaround-plugin':
+        specifier: ^7.10.0
+        version: 7.10.0
       '@tailwindcss/postcss':
         specifier: ^4.0.0
         version: 4.3.3
@@ -805,6 +808,9 @@ packages:
 
   '@prisma/get-platform@6.19.3':
     resolution: {integrity: sha512-xFj1VcJ1N3MKooOQAGO0W5tsd0W2QzIvW7DD7c/8H14Zmp4jseeWAITm+w2LLoLrlhoHdPPh0NMZ8mfL6puoHA==}
+
+  '@prisma/nextjs-monorepo-workaround-plugin@7.10.0':
+    resolution: {integrity: sha512-8MSZZrYjPY1azTSeb89tZjmk3OoyejwqsIpXA3zewNpKObHgfzlS3TE9P6jAUj816CNnTCo7Qi9zLDFjWsEmnQ==}
 
   '@rollup/rollup-android-arm-eabi@4.63.1':
     resolution: {integrity: sha512-UZ8sUxPTiHWYX9QNdJedb1kDZSpS1t/VPWBWGSgqHNi9w3Cu6IXvu2mzbhiTiPvtrqgTQJ+zqiAq2iPIPilpaQ==}
@@ -3623,6 +3629,8 @@ snapshots:
   '@prisma/get-platform@6.19.3':
     dependencies:
       '@prisma/debug': 6.19.3
+
+  '@prisma/nextjs-monorepo-workaround-plugin@7.10.0': {}
 
   '@rollup/rollup-android-arm-eabi@4.63.1':
     optional: true

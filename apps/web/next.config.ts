@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PrismaPlugin } from "@prisma/nextjs-monorepo-workaround-plugin";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@nexusdrive/core", "@nexusdrive/database"],
@@ -37,7 +38,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.plugins = [...(config.plugins ?? []), new PrismaPlugin()];
+    }
     config.ignoreWarnings = [
       ...(config.ignoreWarnings ?? []),
       // bullmq: peer opsional Valkey Glide + dynamic-require child processor
