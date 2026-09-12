@@ -1,0 +1,23 @@
+{
+  "name": "worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --import tsx src/index.ts",
+    "start": "node --env-file-if-exists=.env --import tsx src/index.ts",
+    "verify:transfer": "node --env-file-if-exists=.env --import tsx scripts/verify-transfer.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nexusdrive/core": "workspace:*",
+    "@nexusdrive/database": "workspace:*",
+    "@prisma/client": "^6.1.0",
+    "bullmq": "^5.34.0",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

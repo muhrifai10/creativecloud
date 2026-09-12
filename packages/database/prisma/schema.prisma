@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CloudProvider {
+  google_drive
+  dropbox
+  onedrive
+  mega
+  pcloud
+}
+
+enum AccountStatus {
+  active
+  expired
+  revoked
+  error
+}
+
+enum TransferStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}
+
+enum SyncDirection {
+  one_way
+  two_way
+  mirror
+}
+
+// Auth.js v5 (pengganti auth.users Supabase untuk login credentials app NexusDrive)
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  name          String?
+  image         String?
+  passwordHash  String
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile           Profile?
+  accounts          AccountAuth[]
+  sessions          Session[]
+  connectedAccounts ConnectedAccount[]
+  fileItems         FileItem[]
+  transferJobs      TransferJob[]
+  syncSchedules     SyncSchedule[]
+
+  @@map("users")
+}
+
+// Adapter model Auth.js untuk OAuth login (mis. magic link) di masa depan
+model AccountAuth {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @map("user_id") @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("auth_accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id") @db.Uuid
+  expires      DateTime @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime @db.Timestamptz(6)
+
+  @@unique([identifier, token])
+  @@map("auth_verification_tokens")
+}
+
+model Profile {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  fullName  String?  @map("full_name")
+  avatarUrl String?  @map("avatar_url")
+  onboardingCompleted Boolean @default(false) @map("onboarding_completed")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model ConnectedAccount {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  provider        CloudProvider
+  accountEmail    String        @map("account_email")
+  accountName     String?       @map("account_name")
+  providerMeta    Json?         @map("provider_meta")
+  status          AccountStatus @default(active)
+  totalSpaceBytes BigInt        @default(0) @map("total_space_bytes")
+  usedSpaceBytes  BigInt        @default(0) @map("used_space_bytes")
+  lastSyncedAt    DateTime?     @map("last_synced_at") @db.Timestamptz(6)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vault      CredentialVault?
+  fileItems  FileItem[]
+  sourceJobs TransferJob[]   @relation("SourceAccount")
+  targetJobs TransferJob[]   @relation("TargetAccount")
+  sourceSync SyncSchedule[]  @relation("SourceSync")
+  targetSync SyncSchedule[]  @relation("TargetSync")
+
+  @@unique([userId, provider, accountEmail])
+  @@map("connected_accounts")
+}
+
+model CredentialVault {
+  id                   String   @id @default(uuid()) @db.Uuid
+  accountId            String   @unique @map("account_id") @db.Uuid
+  encryptedAccessToken String?  @map("encrypted_access_token")
+  encryptedRefreshToken String? @map("encrypted_refresh_token")
+  encryptedApiKey      String?  @map("encrypted_api_key")
+  tokenExpiresAt       DateTime? @map("token_expires_at") @db.Timestamptz(6)
+  encryptionKeyVersion Int      @default(1) @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  account ConnectedAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("credential_vault")
+}
+
+model FileItem {
+  id               String        @id @default(uuid()) @db.Uuid
+  accountId        String        @map("account_id") @db.Uuid
+  userId           String        @map("user_id") @db.Uuid
+  provider         CloudProvider
+  providerFileId   String        @map("provider_file_id")
+  providerParentId String?       @map("provider_parent_id")
+  name             String
+  extension        String?
+  mimeType         String?       @map("mime_type")
+  sizeBytes        BigInt        @default(0) @map("size_bytes")
+  isFolder         Boolean       @default(false) @map("is_folder")
+  pathHierarchy    String        @map("path_hierarchy")
+  webViewLink      String?       @map("web_view_link")
+  thumbnailR2Key   String?       @map("thumbnail_r2_key")
+  aiTags           String[]      @default([]) @map("ai_tags")
+  // ponytail: kolom embedding vector(1536) ditambahkan Fase 7 via SQL (pgvector), bukan Prisma
+  providerModifiedAt DateTime?   @map("provider_modified_at") @db.Timestamptz(6)
+  lastIndexedAt      DateTime    @default(now()) @map("last_indexed_at") @db.Timestamptz(6)
+
+  account ConnectedAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, providerFileId])
+  @@index([userId, name])
+  @@index([userId, isFolder])
+  @@map("file_items")
+}
+
+model TransferJob {
+  id                 String         @id @default(uuid()) @db.Uuid
+  userId             String         @map("user_id") @db.Uuid
+  sourceAccountId    String         @map("source_account_id") @db.Uuid
+  sourceFileId       String         @map("source_file_id")
+  sourceFileName     String         @map("source_file_name")
+  sourceFileSize     BigInt         @map("source_file_size")
+  targetAccountId    String         @map("target_account_id") @db.Uuid
+  targetFolderId     String         @map("target_folder_id")
+  status             TransferStatus @default(pending)
+  progressPercentage Int            @default(0) @map("progress_percentage")
+  bytesTransferred   BigInt         @default(0) @map("bytes_transferred")
+  errorMessage       String?        @map("error_message")
+  bullmqJobId        String?        @map("bullmq_job_id")
+  startedAt          DateTime?      @map("started_at") @db.Timestamptz(6)
+  completedAt        DateTime?      @map("completed_at") @db.Timestamptz(6)
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceAccount ConnectedAccount @relation("SourceAccount", fields: [sourceAccountId], references: [id], onDelete: Cascade)
+  targetAccount ConnectedAccount @relation("TargetAccount", fields: [targetAccountId], references: [id], onDelete: Cascade)
+
+  @@map("transfer_jobs")
+}
+
+model SyncSchedule {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  sourceAccountId String        @map("source_account_id") @db.Uuid
+  sourceFolderId  String        @map("source_folder_id")
+  targetAccountId String        @map("target_account_id") @db.Uuid
+  targetFolderId  String        @map("target_folder_id")
+  syncDirection   SyncDirection @default(one_way) @map("sync_direction")
+  cronExpression  String        @map("cron_expression")
+  isActive        Boolean       @default(true) @map("is_active")
+  lastRunAt       DateTime?     @map("last_run_at") @db.Timestamptz(6)
+  nextRunAt       DateTime?     @map("next_run_at") @db.Timestamptz(6)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceAccount ConnectedAccount @relation("SourceSync", fields: [sourceAccountId], references: [id], onDelete: Cascade)
+  targetAccount ConnectedAccount @relation("TargetSync", fields: [targetAccountId], references: [id], onDelete: Cascade)
+
+  @@map("sync_schedules")
+}

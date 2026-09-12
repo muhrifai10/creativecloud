@@ -1,0 +1,14 @@
+{
+  "name": "nexusdrive",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "test": "pnpm -r test",
+    "db:push": "pnpm --filter @nexusdrive/database db:push",
+    "db:seed": "pnpm --filter @nexusdrive/database seed"
+  }
+}
