@@ -43,3 +43,7 @@ pnpm build       # next build
 - [ ] FASE 8: Hardening & E2E
 
 Catatan dev: `packages/database/supabase/migrations/0001_init.sql` adalah deliverable migrasi Supabase (RLS `auth.uid()`); dev lokal memakai `prisma db push`.
+
+---
+
+*Aplikasi ini dibuat 100% menggunakan AI, dengan bantuan PRD generator dari [godigi.my.id](https://godigi.my.id).*
