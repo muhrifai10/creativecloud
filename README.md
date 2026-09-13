@@ -46,4 +46,4 @@ Catatan dev: `packages/database/supabase/migrations/0001_init.sql` adalah delive
 
 ---
 
-*Aplikasi ini dibuat 100% menggunakan AI, dengan bantuan PRD generator dari [godigi.my.id](https://godigi.my.id).*
+*Aplikasi ini dibuat 100% menggunakan AI, dengan bantuan PRD generator dari [https://ngodingai.com](https://ngodingai.com).*
